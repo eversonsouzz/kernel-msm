@@ -17,7 +17,7 @@ jobs:
       - name: Instalar Dependencias Gerais
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential bc libssl-dev libncurses5-dev bison flex libelf-dev libzip-dev git python3 python-is-python3 gcc-aarch64-linux-gnu gcc-arm-linux-androideabi
+          sudo apt-get install -y build-essential bc libssl-dev libncurses5-dev bison flex libelf-dev libzip-dev git python3 python-is-python3 gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi
 
       - name: Baixar Clang do AOSP (r383902 / Clang 11.0)
         run: |
@@ -45,19 +45,19 @@ jobs:
           export CC=clang
           export CLANG_TRIPLE=aarch64-linux-gnu-
           export CROSS_COMPILE=aarch64-linux-gnu-
-          export CROSS_COMPILE_ARM32=arm-linux-androideabi-
+          export CROSS_COMPILE_ARM32=arm-linux-gnueabi-
           export KCFLAGS="-w"
 
-          # Configores do Snapdragon 665 / Moto G8
-          make O=out CC=clang CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-androideabi- vendor/trinket-perf_defconfig
+          # Configurações do Snapdragon 665 / Moto G8
+          make O=out CC=clang CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- vendor/trinket-perf_defconfig
 
           if [ -f arch/arm64/configs/vendor/ext_config/moto-trinket-rav.config ]; then
             scripts/kconfig/merge_config.sh -m -O out out/.config arch/arm64/configs/vendor/ext_config/moto-trinket-rav.config
-            make O=out CC=clang CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-androideabi- olddefconfig
+            make O=out CC=clang CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- olddefconfig
           fi
 
-          # Executa a compilacao
-          make -j$(nproc) O=out CC=clang CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-androideabi-
+          # Executa a compilação
+          make -j$(nproc) O=out CC=clang CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi-
 
       - name: Compactar e Salvar o Resultado
         uses: actions/upload-artifact@v4
