@@ -13,11 +13,15 @@ jobs:
         with:
           ref: 'MMI-RPJS31.Q4U-47-35-17'
 
-      - name: Instalar Dependências, Python 2 e Toolchain
+      - name: Configurar Python 2.7
+        uses: actions/setup-python@v5
+        with:
+          python-version: '2.7'
+
+      - name: Instalar Dependências e Toolchain
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential bc libssl-dev libncurses5-dev bison flex libelf-dev libzip-dev clang gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi python2
-          sudo ln -sf /usr/bin/python2 /usr/bin/python
+          sudo apt-get install -y build-essential bc libssl-dev libncurses5-dev bison flex libelf-dev libzip-dev clang gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi
 
       - name: Configurar e Compilar o Kernel
         run: |
@@ -26,7 +30,7 @@ jobs:
           export CROSS_COMPILE=aarch64-linux-gnu-
           export CROSS_COMPILE_ARM32=arm-linux-gnueabi-
 
-          # Desativa o wrapper de avisos incompatível com Python 3
+          # Ignora warnings como erros no build
           export KCFLAGS="-w"
 
           # 1. Carrega a base do Snapdragon 665 (trinket)
@@ -34,6 +38,19 @@ jobs:
 
           # 2. Aplica a config do Moto G8 (rav)
           scripts/kconfig/merge_config.sh -m -O out out/.config arch/arm64/configs/vendor/ext_config/moto-trinket-rav.config
+          make O=out olddefconfig
+
+          # 3. Compila os binários
+          make -j$(nproc) O=out
+
+      - name: Compactar e Salvar o Resultado
+        uses: actions/upload-artifact@v4
+        with:
+          name: Kernel-MotoG8-rav
+          path: |
+            out/arch/arm64/boot/Image.gz-dtb
+            out/arch/arm64/boot/Image.gz
+            out/arch/arm64/boot/dtbo.img
           make O=out olddefconfig
 
           # 3. Compila os binários ignorando o gcc-wrapper se necessário
