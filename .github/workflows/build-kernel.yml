@@ -48,28 +48,24 @@ jobs:
           export CROSS_COMPILE_ARM32=arm-linux-gnueabi-
           export KCFLAGS="-w"
 
-          # 1. Garante a criação da pasta de destion
+          # 1. Garante que a pasta destino exista
           mkdir -p arch/arm64/configs
 
-          # 2. Localiza dinamicamente o arquivo defconfig do trinket e copia
-          SRC_DEFCONFIG=$(find . -type f \( -name "trinket-perf_defconfig" -o -name "trinket_defconfig" \) | head -n 1)
-          cp "$SRC_DEFCONFIG" arch/arm64/configs/trinket_defconfig
+          # 2. Busca qualquer defconfig relativo ao trinket na arvore atual
+          SRC_DEFCONFIG=$(find arch/arm64/configs -type f \( -name "*trinket*" -o -name "*perf*" \) | head -n 1)
 
-          # 3. Concatena os fragmentos da Motorola diretamente no arquivo copiado
-          MOTO_TRINKET=$(find . -type f -name "moto-trinket.config" | head -n 1)
-          MOTO_RAV=$(find . -type f -name "moto-trinket-rav.config" | head -n 1)
-
-          if [ -n "$MOTO_TRINKET" ]; then
-            cat "$MOTO_TRINKET" >> arch/arm64/configs/trinket_defconfig
-          fi
-          if [ -n "$MOTO_RAV" ]; then
-            cat "$MOTO_RAV" >> arch/arm64/configs/trinket_defconfig
+          if [ -z "$SRC_DEFCONFIG" ]; then
+            echo "Nenhum defconfig específico foi achado, usando defconfig padrao"
+            SRC_DEFCONFIG=$(find arch/arm64/configs -type f -name "*defconfig" | head -n 1)
           fi
 
-          # 4. Carrega a configuração (agora o arquivo está 100% garantido em arch/arm64/configs/trinket_defconfig)
-          make O=out CC=clang CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- trinket_defconfig
+          echo "Usando o arquivo de configuracao: $SRC_DEFCONFIG"
+          cp "$SRC_DEFCONFIG" arch/arm64/configs/custom_defconfig
 
-          # 5. Compilação do Kernel
+          # 3. Gerar o .config em out/
+          make O=out CC=clang CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- custom_defconfig
+
+          # 4. Compilação
           make -j$(nproc) O=out CC=clang CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi-
 
       - name: Compactar e Salvar o Resultado
