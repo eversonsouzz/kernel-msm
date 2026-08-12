@@ -38,31 +38,25 @@ jobs:
           export ARCH=arm64
           export SUBARCH=arm64
           
-          # Configura caminhos absolutos com GITHUB_WORKSPACE
-          TOOLCHAIN64_BIN="$GITHUB_WORKSPACE/toolchain64/bin"
-          TOOLCHAIN32_BIN="$GITHUB_WORKSPACE/toolchain32/bin"
-          export PATH="$TOOLCHAIN64_BIN:$TOOLCHAIN32_BIN:$PATH"
-
-          # Cria link simbolico para o linker caso esteja ausente no pacote AOSP
-          if [ ! -f "$TOOLCHAIN64_BIN/aarch64-linux-android-ld" ]; then
-            ln -sf $(which aarch64-linux-gnu-ld) "$TOOLCHAIN64_BIN/aarch64-linux-android-ld"
-          fi
+          # Adiciona as toolchains ao PATH
+          export PATH="$GITHUB_WORKSPACE/toolchain64/bin:$GITHUB_WORKSPACE/toolchain32/bin:$PATH"
 
           export CROSS_COMPILE=aarch64-linux-android-
           export CROSS_COMPILE_ARM32=arm-linux-androideabi-
+          export LD=aarch64-linux-gnu-ld
           export KCFLAGS="-w"
 
           # Configura base do Snapdragon 665
-          make O=out vendor/trinket-perf_defconfig
+          make O=out LD=aarch64-linux-gnu-ld vendor/trinket-perf_defconfig
 
           # Aplica a configuracao do Moto G8 (rav)
           if [ -f arch/arm64/configs/vendor/ext_config/moto-trinket-rav.config ]; then
             scripts/kconfig/merge_config.sh -m -O out out/.config arch/arm64/configs/vendor/ext_config/moto-trinket-rav.config
-            make O=out olddefconfig
+            make O=out LD=aarch64-linux-gnu-ld olddefconfig
           fi
 
           # Executa a compilacao
-          make -j$(nproc) O=out
+          make -j$(nproc) O=out LD=aarch64-linux-gnu-ld
 
       - name: Compactar e Salvar o Resultado
         uses: actions/upload-artifact@v4
