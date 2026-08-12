@@ -48,15 +48,18 @@ jobs:
           export CROSS_COMPILE_ARM32=arm-linux-gnueabi-
           export KCFLAGS="-w"
 
-          # Configurações do Snapdragon 665 / Moto G8
+          # 1. Carrega a base Trinket/Snapdragon 665
           make O=out CC=clang CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- vendor/trinket-perf_defconfig
 
+          # 2. Mescla as configurações específicas do Moto G8 (rav)
           if [ -f arch/arm64/configs/vendor/ext_config/moto-trinket-rav.config ]; then
-            scripts/kconfig/merge_config.sh -m -O out out/.config arch/arm64/configs/vendor/ext_config/moto-trinket-rav.config
+            ARCH=arm64 scripts/kconfig/merge_config.sh -m -O out out/.config \
+              arch/arm64/configs/vendor/ext_config/moto-trinket.config \
+              arch/arm64/configs/vendor/ext_config/moto-trinket-rav.config
             make O=out CC=clang CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- olddefconfig
           fi
 
-          # Executa a compilação
+          # 3. Compilação
           make -j$(nproc) O=out CC=clang CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi-
 
       - name: Compactar e Salvar o Resultado
