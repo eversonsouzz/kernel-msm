@@ -51,6 +51,23 @@ jobs:
             out/arch/arm64/boot/Image.gz-dtb
             out/arch/arm64/boot/Image.gz
             out/arch/arm64/boot/dtbo.img
+          make O=out vendor/trinket-perf_defconfig
+
+          # 2. Aplica a config do Moto G8 (rav)
+          scripts/kconfig/merge_config.sh -m -O out out/.config arch/arm64/configs/vendor/ext_config/moto-trinket-rav.config
+          make O=out olddefconfig
+
+          # 3. Compila os binários
+          make -j$(nproc) O=out
+
+      - name: Compactar e Salvar o Resultado
+        uses: actions/upload-artifact@v4
+        with:
+          name: Kernel-MotoG8-rav
+          path: |
+            out/arch/arm64/boot/Image.gz-dtb
+            out/arch/arm64/boot/Image.gz
+            out/arch/arm64/boot/dtbo.img
           make O=out olddefconfig
 
           # 3. Compila os binários ignorando o gcc-wrapper se necessário
