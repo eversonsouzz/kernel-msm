@@ -48,14 +48,20 @@ jobs:
           export CROSS_COMPILE_ARM32=arm-linux-gnueabi-
           export KCFLAGS="-w"
 
-          # 1. Garante a criação do diretório e copia mantendo o nome original trinket-perf_defconfig
-          mkdir -p arch/arm64/configs
-          cp arch/arm64/configs/vendor/trinket-perf_defconfig arch/arm64/configs/trinket-perf_defconfig
+          # Procura o arquivo trinket-perf_defconfig em todo o diretorio clonado
+          DEFCONFIG_SRC=$(find "$GITHUB_WORKSPACE" -name "trinket-perf_defconfig" | head -n 1)
+          
+          # Se o codigo fonte estiver numa subpasta (ex: kernel_rav), entra nela
+          KERNEL_DIR=$(dirname $(dirname $(dirname $(dirname "$DEFCONFIG_SRC"))))
+          cd "$KERNEL_DIR"
 
-          # 2. Carrega o defconfig base
+          # Copia o defconfig base para a raiz das configs do arm64
+          cp "$DEFCONFIG_SRC" "arch/arm64/configs/trinket-perf_defconfig"
+
+          # 1. Carrega o defconfig base
           make O=out CC=clang CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- trinket-perf_defconfig
 
-          # 3. Mescla os fragmentos da Motorola para o Moto G8 (rav)
+          # 2. Aplica as configuracoes da Motorola (moto-trinket + rav)
           if [ -f arch/arm64/configs/vendor/ext_config/moto-trinket-rav.config ]; then
             ARCH=arm64 scripts/kconfig/merge_config.sh -m -O out out/.config \
               arch/arm64/configs/vendor/ext_config/moto-trinket.config \
@@ -63,7 +69,7 @@ jobs:
             make O=out CC=clang CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- olddefconfig
           fi
 
-          # 4. Compila o kernel
+          # 3. Executa a compilacao
           make -j$(nproc) O=out CC=clang CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi-
 
       - name: Compactar e Salvar o Resultado
@@ -71,6 +77,6 @@ jobs:
         with:
           name: Kernel-MotoG8-rav
           path: |
-            out/arch/arm64/boot/Image.gz-dtb
-            out/arch/arm64/boot/Image.gz
-            out/arch/arm64/boot/dtbo.img
+            **/out/arch/arm64/boot/Image.gz-dtb
+            **/out/arch/arm64/boot/Image.gz
+            **/out/arch/arm64/boot/dtbo.img
