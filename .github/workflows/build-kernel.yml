@@ -7,10 +7,9 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
-
     steps:
       - name: Baixar o Código-Fonte
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: 'MMI-RPJS31.Q4U-47-35-17'
 
@@ -30,7 +29,7 @@ jobs:
           make -j$(nproc) O=out
 
       - name: Compactar e Salvar o Resultado
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: Kernel-MotoG8-rav
           path: |
