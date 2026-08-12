@@ -48,20 +48,18 @@ jobs:
           export CROSS_COMPILE_ARM32=arm-linux-gnueabi-
           export KCFLAGS="-w"
 
-          # Procura o arquivo trinket-perf_defconfig em todo o diretorio clonado
-          DEFCONFIG_SRC=$(find "$GITHUB_WORKSPACE" -name "trinket-perf_defconfig" | head -n 1)
-          
-          # Se o codigo fonte estiver numa subpasta (ex: kernel_rav), entra nela
-          KERNEL_DIR=$(dirname $(dirname $(dirname $(dirname "$DEFCONFIG_SRC"))))
-          cd "$KERNEL_DIR"
+          # 1. Garante que a pasta arch/arm64/configs exista
+          mkdir -p arch/arm64/configs
 
-          # Copia o defconfig base para a raiz das configs do arm64
-          cp "$DEFCONFIG_SRC" "arch/arm64/configs/trinket-perf_defconfig"
+          # 2. Copia o defconfig base da Qualcomm
+          if [ -f arch/arm64/configs/vendor/trinket-perf_defconfig ]; then
+            cp arch/arm64/configs/vendor/trinket-perf_defconfig arch/arm64/configs/trinket-perf_defconfig
+          fi
 
-          # 1. Carrega o defconfig base
+          # 3. Carrega o defconfig base
           make O=out CC=clang CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- trinket-perf_defconfig
 
-          # 2. Aplica as configuracoes da Motorola (moto-trinket + rav)
+          # 4. Aplica os fragmentos da Motorola para o Moto G8 (rav)
           if [ -f arch/arm64/configs/vendor/ext_config/moto-trinket-rav.config ]; then
             ARCH=arm64 scripts/kconfig/merge_config.sh -m -O out out/.config \
               arch/arm64/configs/vendor/ext_config/moto-trinket.config \
@@ -69,7 +67,7 @@ jobs:
             make O=out CC=clang CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- olddefconfig
           fi
 
-          # 3. Executa a compilacao
+          # 5. Compilacao do Kernel
           make -j$(nproc) O=out CC=clang CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi-
 
       - name: Compactar e Salvar o Resultado
@@ -77,6 +75,6 @@ jobs:
         with:
           name: Kernel-MotoG8-rav
           path: |
-            **/out/arch/arm64/boot/Image.gz-dtb
-            **/out/arch/arm64/boot/Image.gz
-            **/out/arch/arm64/boot/dtbo.img
+            out/arch/arm64/boot/Image.gz-dtb
+            out/arch/arm64/boot/Image.gz
+            out/arch/arm64/boot/dtbo.img
