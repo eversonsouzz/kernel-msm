@@ -15,11 +15,11 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Source Code
+      - name: Checkout Tag Oficial Stock ROM
         uses: actions/checkout@v4
         with:
           repository: 'MotorolaMobilityLLC/kernel-msm'
-          ref: 'android-11-release-rpe31.q4u-47-35'
+          ref: 'MMI-RPJS31.Q4U-47-35-17'
           submodules: recursive
 
       - name: Install dependencies (non-interactive)
