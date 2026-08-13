@@ -57,7 +57,8 @@ jobs:
           make "${BUILD_OPTIONS[@]}" rav_defconfig
           
           # Compilar imagem
-          make "${BUILD_OPTIONS[@]}" 
+          make "${BUILD_OPTIONS[@]}" make -j$(nproc) modules
+
 
       - name: Upload Kernel Artifact
         uses: actions/upload-artifact@v4
