@@ -15,10 +15,11 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Source Code
+      - name: Checkout Android 11 Branch
         uses: actions/checkout@v4
         with:
-          ref: 'MMI-RPJS31.Q4U-47-35-17'
+          repository: 'MotorolaMobilityLLC/kernel-msm'
+          ref: 'android-11-release-rpe31.q4u-47-35'
           submodules: recursive
 
       - name: Install dependencies (non-interactive)
@@ -81,11 +82,11 @@ jobs:
 
           mkdir -p "${KERNEL_ROOT}/out" "${KERNEL_ROOT}/build"
 
-          # Carrega a defconfig nativa diretamente via make
+          # Carrega a defconfig vendor/trinket-perf_defconfig
           make "${BUILD_OPTIONS[@]}" "${{ github.event.inputs.defconfig }}"
           make "${BUILD_OPTIONS[@]}" olddefconfig
 
-          # Compila a imagem principal, dtbs e dtbo
+          # Compila a imagem principal
           make "${BUILD_OPTIONS[@]}" Image.gz-dtb dtbo.img || make "${BUILD_OPTIONS[@]}" Image.gz
 
           cp -v "${KERNEL_ROOT}/out/arch/arm64/boot/Image.gz-dtb" "${KERNEL_ROOT}/build/" || cp -v "${KERNEL_ROOT}/out/arch/arm64/boot/Image.gz" "${KERNEL_ROOT}/build/"
