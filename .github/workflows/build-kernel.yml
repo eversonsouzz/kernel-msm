@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       defconfig:
-        description: "Defconfig target"
+        description: "Defconfig target (ex: trinket-perf_defconfig ou vendor/trinket-perf_defconfig)"
         required: true
-        default: "vendor/trinket-perf_defconfig"
+        default: "trinket-perf_defconfig"
 
 env:
   KBUILD_BUILD_USER: "@ravindu644"
@@ -80,7 +80,25 @@ jobs:
 
           mkdir -p "${KERNEL_ROOT}/out" "${KERNEL_ROOT}/build"
 
-          make "${BUILD_OPTIONS[@]}" "${{ github.event.inputs.defconfig }}"
+          TARGET_DEFCONFIG="${{ github.event.inputs.defconfig }}"
+
+          # Lógica para localizar a defconfig corretamente independente de como for informada
+          if [ -f "${KERNEL_ROOT}/arch/arm64/configs/${TARGET_DEFCONFIG}" ]; then
+            make "${BUILD_OPTIONS[@]}" "${TARGET_DEFCONFIG}"
+          elif [ -f "${KERNEL_ROOT}/${TARGET_DEFCONFIG}" ]; then
+            cp "${KERNEL_ROOT}/${TARGET_DEFCONFIG}" "${KERNEL_ROOT}/out/.config"
+            make "${BUILD_OPTIONS[@]}" olddefconfig
+          else
+            # Tenta extrair apenas o nome do arquivo caso venha com caminho 'vendor/'
+            DEFCONFIG_NAME=$(basename "${TARGET_DEFCONFIG}")
+            if [ -f "${KERNEL_ROOT}/arch/arm64/configs/${DEFCONFIG_NAME}" ]; then
+              make "${BUILD_OPTIONS[@]}" "${DEFCONFIG_NAME}"
+            else
+              echo "ERRO: Defconfig ${TARGET_DEFCONFIG} nao encontrada!"
+              exit 1
+            fi
+          fi
+
           make "${BUILD_OPTIONS[@]}" olddefconfig
 
           # Compila a imagem principal, dtbs e dtbo se disponíveis
