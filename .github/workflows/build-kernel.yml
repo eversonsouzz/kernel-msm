@@ -1,4 +1,4 @@
-Name: Build Moto G8 Kernel
+name: Build Moto G8 Kernel
 
 on:
   workflow_dispatch:
