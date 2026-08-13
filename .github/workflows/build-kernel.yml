@@ -15,7 +15,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Android 11 Branch
+      - name: Checkout Source Code
         uses: actions/checkout@v4
         with:
           repository: 'MotorolaMobilityLLC/kernel-msm'
@@ -42,7 +42,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/toolchains
-          key: toolchains-clang-r383902b-gcc-14.2.rel1
+          key: toolchains-clang-r383902b-gcc-4.9-v1
 
       - name: Download toolchains
         if: steps.cache-toolchains.outputs.cache-hit != 'true'
@@ -53,21 +53,19 @@ jobs:
           tar -xf /tmp/clang.tar.gz -C ~/toolchains/clang-r383902b
           rm /tmp/clang.tar.gz
 
-          mkdir -p ~/toolchains/gcc
-          curl -L -o /tmp/gcc.tar.xz \
-            "https://developer.arm.com/-/media/Files/downloads/gnu/14.2.rel1/binrel/arm-gnu-toolchain-14.2.rel1-x86_64-aarch64-none-linux-gnu.tar.xz"
-          tar -xf /tmp/gcc.tar.xz -C ~/toolchains/gcc
-          rm /tmp/gcc.tar.xz
+          mkdir -p ~/toolchains/gcc64
+          curl -L -o /tmp/gcc64.tar.gz \
+            "https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9/+archive/android-10.0.0_r47.tar.gz"
+          tar -xf /tmp/gcc64.tar.gz -C ~/toolchains/gcc64
+          rm /tmp/gcc64.tar.gz
 
       - name: Build kernel
         run: |
           set -e
           export ARCH=arm64
           export KERNEL_ROOT="$(pwd)"
-          export PATH="${HOME}/toolchains/clang-r383902b/bin:${PATH}"
+          export PATH="${HOME}/toolchains/clang-r383902b/bin:${HOME}/toolchains/gcc64/bin:${PATH}"
           export LD_LIBRARY_PATH="${HOME}/toolchains/clang-r383902b/lib:${HOME}/toolchains/clang-r383902b/lib64:${LD_LIBRARY_PATH}"
-          export BUILD_CROSS_COMPILE="${HOME}/toolchains/gcc/arm-gnu-toolchain-14.2.rel1-x86_64-aarch64-none-linux-gnu/bin/aarch64-none-linux-gnu-"
-          export BUILD_CC="${HOME}/toolchains/clang-r383902b/bin/clang"
 
           BUILD_OPTIONS=(
             HOSTLDLIBS="-lyaml"
@@ -75,14 +73,15 @@ jobs:
             O="${KERNEL_ROOT}/out"
             -j"$(nproc)"
             ARCH=arm64
-            CROSS_COMPILE="${BUILD_CROSS_COMPILE}"
-            CC="${BUILD_CC}"
+            CROSS_COMPILE=aarch64-linux-android-
+            CC=clang
             CLANG_TRIPLE=aarch64-linux-gnu-
+            KCFLAGS="-fno-pic"
           )
 
           mkdir -p "${KERNEL_ROOT}/out" "${KERNEL_ROOT}/build"
 
-          # Carrega a defconfig vendor/trinket-perf_defconfig
+          # Carrega a defconfig nativa
           make "${BUILD_OPTIONS[@]}" "${{ github.event.inputs.defconfig }}"
           make "${BUILD_OPTIONS[@]}" olddefconfig
 
