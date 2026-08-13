@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       defconfig:
-        description: "Defconfig target (ex: trinket-perf_defconfig ou vendor/trinket-perf_defconfig)"
+        description: "Defconfig target"
         required: true
-        default: "trinket-perf_defconfig"
+        default: "vendor/trinket-perf_defconfig"
 
 env:
   KBUILD_BUILD_USER: "@ravindu644"
@@ -80,26 +80,20 @@ jobs:
 
           mkdir -p "${KERNEL_ROOT}/out" "${KERNEL_ROOT}/build"
 
-          TARGET_DEFCONFIG="${{ github.event.inputs.defconfig }}"
+          INPUT_DEF="${{ github.event.inputs.defconfig }}"
+          FILE_NAME=$(basename "${INPUT_DEF}")
 
-          # Lógica para localizar a defconfig corretamente independente de como for informada
-          if [ -f "${KERNEL_ROOT}/arch/arm64/configs/${TARGET_DEFCONFIG}" ]; then
-            make "${BUILD_OPTIONS[@]}" "${TARGET_DEFCONFIG}"
-          elif [ -f "${KERNEL_ROOT}/${TARGET_DEFCONFIG}" ]; then
-            cp "${KERNEL_ROOT}/${TARGET_DEFCONFIG}" "${KERNEL_ROOT}/out/.config"
+          # Localiza a defconfig na pasta arch/arm64/configs/vendor/ ou em subpastas
+          FOUND_PATH=$(find "${KERNEL_ROOT}/arch/arm64/configs" -name "${FILE_NAME}" -print -quit)
+
+          if [ -n "${FOUND_PATH}" ]; then
+            echo "Defconfig encontrada em: ${FOUND_PATH}"
+            cp "${FOUND_PATH}" "${KERNEL_ROOT}/out/.config"
             make "${BUILD_OPTIONS[@]}" olddefconfig
           else
-            # Tenta extrair apenas o nome do arquivo caso venha com caminho 'vendor/'
-            DEFCONFIG_NAME=$(basename "${TARGET_DEFCONFIG}")
-            if [ -f "${KERNEL_ROOT}/arch/arm64/configs/${DEFCONFIG_NAME}" ]; then
-              make "${BUILD_OPTIONS[@]}" "${DEFCONFIG_NAME}"
-            else
-              echo "ERRO: Defconfig ${TARGET_DEFCONFIG} nao encontrada!"
-              exit 1
-            fi
+            echo "ERRO: Nao foi possivel encontrar o arquivo ${FILE_NAME} em arch/arm64/configs!"
+            exit 1
           fi
-
-          make "${BUILD_OPTIONS[@]}" olddefconfig
 
           # Compila a imagem principal, dtbs e dtbo se disponíveis
           make "${BUILD_OPTIONS[@]}" Image.gz-dtb dtbo.img || make "${BUILD_OPTIONS[@]}" Image.gz
