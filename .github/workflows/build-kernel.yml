@@ -19,14 +19,17 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y build-essential bc libssl-dev libncurses5-dev bison flex libelf-dev libzip-dev git python3 python-is-python3 gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi
 
-      - name: Bypass no gcc-wrapper
+      - name: Corrigir o gcc-wrapper para Python 3
         run: |
           if [ -f scripts/gcc-wrapper.py ]; then
             rm -f scripts/gcc-wrapper.py
-            echo '#!/bin/sh' > scripts/gcc-wrapper.py
-            echo 'exec "$@"' >> scripts/gcc-wrapper.py
-            chmod +x scripts/gcc-wrapper.py
           fi
+          # Criar um wrapper compatível com Python 3
+          echo 'import sys' > scripts/gcc-wrapper.py
+          echo 'import subprocess' >> scripts/gcc-wrapper.py
+          echo 'cmd = sys.argv[1:]' >> scripts/gcc-wrapper.py
+          echo 'sys.exit(subprocess.call(cmd))' >> scripts/gcc-wrapper.py
+          chmod +x scripts/gcc-wrapper.py
 
       - name: Configurar e Compilar o Kernel com GCC
         run: |
