@@ -48,24 +48,32 @@ jobs:
           export CROSS_COMPILE_ARM32=arm-linux-gnueabi-
           export KCFLAGS="-w"
 
-          # 1. Garante que a pasta destino exista
-          mkdir -p arch/arm64/configs
+          # Forçar o defconfig correto do Trinket (Moto G8 / Snapdragon 665)
+          # Vamos procurar o arquivo exato dentro da árvore de configs
+          CONFIG_TARGET=""
+          for path in "vendor/trinket-perf_defconfig" "vendor/trinket_defconfig" "trinket-perf_defconfig" "trinket_defconfig"; do
+            if [ -f "arch/arm64/configs/$path" ]; then
+              CONFIG_TARGET="$path"
+              break
+            fi
+          done
 
-          # 2. Busca qualquer defconfig relativo ao trinket ou rav na arvore atual
-          SRC_DEFCONFIG=$(find arch/arm64/configs -type f \( -name "*rav*" -o -name "*trinket*" -o -name "*perf*" \) | head -n 1)
-
-          if [ -z "$SRC_DEFCONFIG" ]; then
-            echo "Nenhum defconfig específico foi achado, usando defconfig padrao"
-            SRC_DEFCONFIG=$(find arch/arm64/configs -type f -name "*defconfig" | head -n 1)
+          # Se não achar na padrão, busca qualquer arquivo que contenha trinket e perf
+          if [ -z "$CONFIG_TARGET" ]; then
+            CONFIG_TARGET=$(find arch/arm64/configs -type f -name "*trinket*perf*" | head -n 1 | sed 's|arch/arm64/configs/||')
           fi
 
-          echo "Usando o arquivo de configuracao: $SRC_DEFCONFIG"
-          cp "$SRC_DEFCONFIG" arch/arm64/configs/custom_defconfig
+          if [ -z "$CONFIG_TARGET" ]; then
+            echo "Erro: Defconfig do Trinket nao encontrado!"
+            exit 1
+          fi
 
-          # 3. Gerar o .config em out/
-          make O=out CC=clang CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- custom_defconfig
+          echo "Usando o arquivo de configuracao travado: arch/arm64/configs/$CONFIG_TARGET"
 
-          # 4. Compilação
+          # 1. Gerar o .config no diretório out/
+          make O=out CC=clang CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- "$CONFIG_TARGET"
+
+          # 2. Compilar o Kernel
           make -j$(nproc) O=out CC=clang CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi-
 
       - name: Compactar e Salvar o Resultado
