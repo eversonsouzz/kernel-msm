@@ -1,4 +1,4 @@
-name: Build Moto G8 Kernel
+Name: Build Moto G8 Kernel
 
 on:
   workflow_dispatch:
@@ -33,7 +33,7 @@ jobs:
           git clone --depth=1 https://github.com/LineageOS/android_prebuilts_gcc_linux-x86_aarch64_aarch64-linux-android-4.9 gcc64
           git clone --depth=1 https://github.com/LineageOS/android_prebuilts_gcc_linux-x86_arm_arm-linux-androideabi-4.9 gcc32
 
-      - name: Compile Kernel Image
+      - name: Compile Kernel Image and Modules
         run: |
           CLANG_DIR=$GITHUB_WORKSPACE/toolchain/clang/bin
           GCC64_DIR=$GITHUB_WORKSPACE/toolchain/gcc64/bin
@@ -56,12 +56,14 @@ jobs:
           # Carregar defconfig do Moto G8 (rav)
           make "${BUILD_OPTIONS[@]}" rav_defconfig
           
-          # Compilar imagem
-          make "${BUILD_OPTIONS[@]}" make -j$(nproc) modules
-
+          # Compilar imagem e módulos separadamente e sem erros de sintaxe
+          make "${BUILD_OPTIONS[@]}" -j$(nproc) Image.gz-dtb
+          make "${BUILD_OPTIONS[@]}" -j$(nproc) modules
 
       - name: Upload Kernel Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Image.gz-MotoG8
-          path: arch/arm64/boot/Image.gz
+          name: Kernel-MotoG8-Full
+          path: |
+            arch/arm64/boot/Image.gz-dtb
+            **/*.ko
