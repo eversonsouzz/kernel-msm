@@ -1,10 +1,7 @@
-name: Build Moto G8 Kernel
+Name: Build Moto G8 Kernel
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - 'android-13-release-ttz'
 
 jobs:
   build:
@@ -13,6 +10,9 @@ jobs:
     steps:
       - name: Baixar o Codigo-Fonte
         uses: actions/checkout@v4
+        with:
+          repository: 'MotorolaMobilityLLC/kernel-msm'
+          ref: 'MMI-RPJS31.Q4U-47-35-17'
 
       - name: Instalar Dependencias Gerais
         run: |
@@ -51,8 +51,8 @@ jobs:
           # 1. Garante que a pasta destino exista
           mkdir -p arch/arm64/configs
 
-          # 2. Busca qualquer defconfig relativo ao trinket na arvore atual
-          SRC_DEFCONFIG=$(find arch/arm64/configs -type f \( -name "*trinket*" -o -name "*perf*" \) | head -n 1)
+          # 2. Busca qualquer defconfig relativo ao trinket ou rav na arvore atual
+          SRC_DEFCONFIG=$(find arch/arm64/configs -type f \( -name "*rav*" -o -name "*trinket*" -o -name "*perf*" \) | head -n 1)
 
           if [ -z "$SRC_DEFCONFIG" ]; then
             echo "Nenhum defconfig específico foi achado, usando defconfig padrao"
