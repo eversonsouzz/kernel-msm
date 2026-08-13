@@ -1,10 +1,10 @@
-name: Build Kernel
+name: Build Moto G8 Kernel
 
 on:
   workflow_dispatch:
     inputs:
       defconfig:
-        description: "Defconfig target (must exist in arch/arm64/configs/)"
+        description: "Defconfig target"
         required: true
         default: "vendor/trinket-perf_defconfig"
 
@@ -32,9 +32,6 @@ jobs:
             python3-markdown libxml2-utils xsltproc libtinfo6 cpio kmod \
             openssl libelf-dev pahole libssl-dev libarchive-tools zstd \
             libyaml-dev
-          # legacy libtinfo5 some prebuilt clang releases still link against
-          # NOTE: this .deb is from an old Ubuntu security pool and may 404
-          # on newer runner images — verify this step still succeeds
           wget -q http://security.ubuntu.com/ubuntu/pool/universe/n/ncurses/libtinfo5_6.3-2ubuntu0.1_amd64.deb \
             && sudo dpkg -i libtinfo5_6.3-2ubuntu0.1_amd64.deb || true
 
@@ -83,18 +80,17 @@ jobs:
 
           mkdir -p "${KERNEL_ROOT}/out" "${KERNEL_ROOT}/build"
 
-          # apply defconfig, then resolve any new symbols with defaults
-          # (this replaces the interactive `make menuconfig` step —
-          # menuconfig cannot run in a CI job with no attached terminal)
           make "${BUILD_OPTIONS[@]}" "${{ github.event.inputs.defconfig }}"
           make "${BUILD_OPTIONS[@]}" olddefconfig
 
-          make "${BUILD_OPTIONS[@]}" Image
+          # Compila a imagem principal, dtbs e dtbo se disponíveis
+          make "${BUILD_OPTIONS[@]}" Image.gz-dtb dtbo.img || make "${BUILD_OPTIONS[@]}" Image.gz
 
-          cp "${KERNEL_ROOT}/out/arch/arm64/boot/Image" "${KERNEL_ROOT}/build/"
+          cp -v "${KERNEL_ROOT}/out/arch/arm64/boot/Image.gz-dtb" "${KERNEL_ROOT}/build/" || cp -v "${KERNEL_ROOT}/out/arch/arm64/boot/Image.gz" "${KERNEL_ROOT}/build/"
+          [ -f "${KERNEL_ROOT}/out/arch/arm64/boot/dtbo.img" ] && cp -v "${KERNEL_ROOT}/out/arch/arm64/boot/dtbo.img" "${KERNEL_ROOT}/build/" || true
 
       - name: Upload Image artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Image-${{ github.event.inputs.defconfig }}
-          path: build/Image
+          name: Kernel-MotoG8-Artifacts
+          path: build/*
