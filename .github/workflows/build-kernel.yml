@@ -15,9 +15,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout Source Code
         uses: actions/checkout@v4
         with:
+          ref: 'MMI-RPJS31.Q4U-47-35-17'
           submodules: recursive
 
       - name: Install dependencies (non-interactive)
@@ -80,22 +81,11 @@ jobs:
 
           mkdir -p "${KERNEL_ROOT}/out" "${KERNEL_ROOT}/build"
 
-          INPUT_DEF="${{ github.event.inputs.defconfig }}"
-          FILE_NAME=$(basename "${INPUT_DEF}")
+          # Carrega a defconfig nativa diretamente via make
+          make "${BUILD_OPTIONS[@]}" "${{ github.event.inputs.defconfig }}"
+          make "${BUILD_OPTIONS[@]}" olddefconfig
 
-          # Localiza a defconfig na pasta arch/arm64/configs/vendor/ ou em subpastas
-          FOUND_PATH=$(find "${KERNEL_ROOT}/arch/arm64/configs" -name "${FILE_NAME}" -print -quit)
-
-          if [ -n "${FOUND_PATH}" ]; then
-            echo "Defconfig encontrada em: ${FOUND_PATH}"
-            cp "${FOUND_PATH}" "${KERNEL_ROOT}/out/.config"
-            make "${BUILD_OPTIONS[@]}" olddefconfig
-          else
-            echo "ERRO: Nao foi possivel encontrar o arquivo ${FILE_NAME} em arch/arm64/configs!"
-            exit 1
-          fi
-
-          # Compila a imagem principal, dtbs e dtbo se disponíveis
+          # Compila a imagem principal, dtbs e dtbo
           make "${BUILD_OPTIONS[@]}" Image.gz-dtb dtbo.img || make "${BUILD_OPTIONS[@]}" Image.gz
 
           cp -v "${KERNEL_ROOT}/out/arch/arm64/boot/Image.gz-dtb" "${KERNEL_ROOT}/build/" || cp -v "${KERNEL_ROOT}/out/arch/arm64/boot/Image.gz" "${KERNEL_ROOT}/build/"
