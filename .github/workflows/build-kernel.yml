@@ -32,7 +32,6 @@ jobs:
 
       - name: Ajustar Flags de Erro no Makefile
         run: |
-          # Remove o tratamento estrito de Werror globalmente no codigo fonte
           find . -name "Makefile" -o -name "Kbuild" | xargs sed -i 's/-Werror//g'
 
       - name: Configurar e Compilar o Kernel com GCC
@@ -52,10 +51,16 @@ jobs:
 
           echo "Usando o arquivo de configuracao: arch/arm64/configs/$CONFIG_TARGET"
 
-          # 1. Gerar o .config no diretório out/
+          # 1. Gerar o .config base no diretório out/
           make O=out CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- "$CONFIG_TARGET"
 
-          # 2. Compilar o Kernel com supressao total de erros de warnings
+          # 2. Desativar o stack protector estrito no .config gerado para evitar o erro do compilador
+          sed -i 's/CONFIG_CC_STACKPROTECTOR_STRONG=y/# CONFIG_CC_STACKPROTECTOR_STRONG is not set/' out/.config
+          sed -i 's/CONFIG_CC_STACKPROTECTOR_AUTO=y/# CONFIG_CC_STACKPROTECTOR_AUTO is not set/' out/.config
+          sed -i 's/CONFIG_STACKPROTECTOR=y/# CONFIG_STACKPROTECTOR is not set/' out/.config
+          sed -i 's/CONFIG_STACKPROTECTOR_STRONG=y/# CONFIG_STACKPROTECTOR_STRONG is not set/' out/.config
+
+          # 3. Compilar o Kernel sem travamentos de stack protector
           make -j$(nproc) O=out CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi-
 
       - name: Compactar e Salvar o Resultado
