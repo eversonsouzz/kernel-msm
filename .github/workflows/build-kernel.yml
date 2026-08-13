@@ -24,7 +24,6 @@ jobs:
           if [ -f scripts/gcc-wrapper.py ]; then
             rm -f scripts/gcc-wrapper.py
           fi
-          # Criar um wrapper compatível com Python 3
           echo 'import sys' > scripts/gcc-wrapper.py
           echo 'import subprocess' >> scripts/gcc-wrapper.py
           echo 'cmd = sys.argv[1:]' >> scripts/gcc-wrapper.py
@@ -37,7 +36,10 @@ jobs:
           export SUBARCH=arm64
           export CROSS_COMPILE=aarch64-linux-gnu-
           export CROSS_COMPILE_ARM32=arm-linux-gnueabi-
-          export KCFLAGS="-w"
+          
+          # Forçar o GCC a ignorar erros de aviso estritos (-Wno-error)
+          export KCFLAGS="-w -Wno-error"
+          export HOSTCFLAGS="-Wno-error"
 
           CONFIG_TARGET="vendor/trinket-perf_defconfig"
           if [ ! -f "arch/arm64/configs/$CONFIG_TARGET" ]; then
@@ -49,8 +51,8 @@ jobs:
           # 1. Gerar o .config no diretório out/
           make O=out CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- "$CONFIG_TARGET"
 
-          # 2. Compilar o Kernel usando o GCC nativo do Ubuntu
-          make -j$(nproc) O=out CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi-
+          # 2. Compilar o Kernel forçando ignorar erros de GCC
+          make -j$(nproc) O=out CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- KCFLAGS="-w -Wno-error"
 
       - name: Compactar e Salvar o Resultado
         uses: actions/upload-artifact@v4
