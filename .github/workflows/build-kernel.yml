@@ -19,13 +19,13 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y build-essential bc libssl-dev libncurses5-dev bison flex libelf-dev libzip-dev git python3 python-is-python3 gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi
 
-      - name: Baixar Clang do AOSP (r383902 / Clang 11.0)
+      - name: Baixar Clang do AOSP (Clang 10.0)
         run: |
           mkdir -p clang
           cd clang
-          wget -q https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/android-11.0.0_r1/clang-r383902.tar.gz
-          tar -xzf clang-r383902.tar.gz
-          rm -f clang-r383902.tar.gz
+          wget -q https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/android-10.0.0_r1/clang-r353983c.tar.gz
+          tar -xzf clang-r353983c.tar.gz
+          rm -f clang-r353983c.tar.gz
 
       - name: Bypass no gcc-wrapper
         run: |
@@ -49,26 +49,12 @@ jobs:
           export KCFLAGS="-w"
 
           # Forçar o defconfig correto do Trinket (Moto G8 / Snapdragon 665)
-          # Vamos procurar o arquivo exato dentro da árvore de configs
-          CONFIG_TARGET=""
-          for path in "vendor/trinket-perf_defconfig" "vendor/trinket_defconfig" "trinket-perf_defconfig" "trinket_defconfig"; do
-            if [ -f "arch/arm64/configs/$path" ]; then
-              CONFIG_TARGET="$path"
-              break
-            fi
-          done
-
-          # Se não achar na padrão, busca qualquer arquivo que contenha trinket e perf
-          if [ -z "$CONFIG_TARGET" ]; then
-            CONFIG_TARGET=$(find arch/arm64/configs -type f -name "*trinket*perf*" | head -n 1 | sed 's|arch/arm64/configs/||')
+          CONFIG_TARGET="vendor/trinket-perf_defconfig"
+          if [ ! -f "arch/arm64/configs/$CONFIG_TARGET" ]; then
+            CONFIG_TARGET="trinket-perf_defconfig"
           fi
 
-          if [ -z "$CONFIG_TARGET" ]; then
-            echo "Erro: Defconfig do Trinket nao encontrado!"
-            exit 1
-          fi
-
-          echo "Usando o arquivo de configuracao travado: arch/arm64/configs/$CONFIG_TARGET"
+          echo "Usando o arquivo de configuracao: arch/arm64/configs/$CONFIG_TARGET"
 
           # 1. Gerar o .config no diretório out/
           make O=out CC=clang CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- "$CONFIG_TARGET"
